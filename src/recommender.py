@@ -70,14 +70,14 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """
     Scores a single song against user preferences.
 
-    Algorithm Recipe
+    Algorithm Recipe  [EXPERIMENT: weight shift — genre halved, energy doubled]
     ----------------
     Categorical matches (exact string equality):
-        genre match  → +2.0
+        genre match  → +1.0  (was +2.0, halved to reduce genre dominance)
         mood match   → +2.0
 
     Numerical proximity (each worth up to the stated max):
-        energy       → up to +1.5  (max_pts * (1 - |user - song|))
+        energy       → up to +3.0  (was +1.5, doubled — max_pts * (1 - |user - song|))
         tempo_bpm    → up to +1.0  (max_pts * (1 - |user - song| / 100))
         valence      → up to +0.75 (max_pts * (1 - |user - song|))
         danceability → up to +0.75 (max_pts * (1 - |user - song|))
@@ -85,15 +85,15 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     Bonus:
         likes_acoustic + song acousticness > 0.6 → +0.5
 
-    Maximum possible score: 8.5
+    Maximum possible score: 9.0  (was 8.5; genre −1.0, energy +1.5 → net +0.5)
     """
     score: float = 0.0
     reasons: List[str] = []
 
     # --- categorical: genre ---
     if user_prefs.get("genre", "").lower() == song["genre"].lower():
-        score += 2.0
-        reasons.append(f"genre match (+2.0)")
+        score += 1.0
+        reasons.append(f"genre match (+1.0)")
 
     # --- categorical: mood ---
     if user_prefs.get("mood", "").lower() == song["mood"].lower():
@@ -101,7 +101,7 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
         reasons.append(f"mood match (+2.0)")
 
     # --- numerical: energy ---
-    energy_pts = 1.5 * (1.0 - abs(user_prefs["energy"] - song["energy"]))
+    energy_pts = 3.0 * (1.0 - abs(user_prefs["energy"] - song["energy"]))
     score += energy_pts
     reasons.append(f"energy proximity (+{energy_pts:.2f})")
 

@@ -113,6 +113,38 @@ Use this section to document the experiments you ran. For example:
 - What happened when you added tempo or valence to the score
 - How did your system behave for different types of users
 
+### Step 1: Stress Test with Diverse Profiles
+
+#### Profile 1: Chill / Lofi Listener
+`genre: lofi | mood: chill | energy: 0.40 | tempo_bpm: 80 | valence: 0.60 | danceability: 0.60 | acousticness: 0.80 | likes_acoustic: True`
+
+![Phase 4.1.1 – Chill Lofi Results](Screenshots/Phase_4.1.1.png)
+
+---
+
+#### Profile 2: Hype / Workout (EDM)
+`genre: edm | mood: energetic | energy: 0.95 | tempo_bpm: 138 | valence: 0.75 | danceability: 0.92 | acousticness: 0.05 | likes_acoustic: False`
+
+![Phase 4.1.2 – Hype Workout Results](Screenshots/Phase_4.1.2.png)
+
+---
+
+#### Profile 3: Melancholic / Late-Night (Blues)
+`genre: blues | mood: sad | energy: 0.32 | tempo_bpm: 78 | valence: 0.30 | danceability: 0.45 | acousticness: 0.88 | likes_acoustic: True`
+
+![Phase 4.1.3 – Melancholic Late-Night Results](Screenshots/Phase_4.1.3.png)
+
+---
+
+#### Profile 4: Adversarial — Conflicting Signals
+`genre: blues | mood: sad | energy: 0.92 | tempo_bpm: 140 | valence: 0.15 | danceability: 0.88 | acousticness: 0.10 | likes_acoustic: True`
+
+This profile was intentionally designed with contradictory preferences: the categorical labels (`blues`, `sad`) point toward slow, low-energy tracks, while the numerical values (`energy: 0.92`, `tempo_bpm: 140`, `danceability: 0.88`) point toward high-energy dance music. The acoustic bonus (`likes_acoustic: True`) was added despite a low acousticness target to test whether the +0.5 bonus could push an otherwise poorly-ranked acoustic track into the top 5.
+
+**Result:** The scorer matched `blues`+`sad` for #1 and #2 as expected, but #3 was an EDM track ("Drop the Beat") and #4 was rock ("Storm Runner") — confirming that strong numerical proximity can override genre/mood mismatch when categorical scores split equally.
+
+![Phase 4.1.4 – Adversarial Profile Results](Screenshots/Phase_4.1.4.png)
+
 ---
 
 ## Limitations and Risks
@@ -127,6 +159,10 @@ Examples:
 
 You will go deeper on this in your model card.
 
+- The catalog has only 20 songs, so niche genres often have just one match, which locks in the top result before any real comparison takes place.
+- Mood is an exact string match, meaning adjacent moods like "chill" and "relaxed" are treated as completely unrelated and score zero similarity.
+- The system does not consider tempo ranges, lyric content, listening history, or time of day, all of which factor into how real recommenders serve users.
+
 ---
 
 ## Reflection
@@ -139,6 +175,8 @@ Write 1 to 2 paragraphs here about what you learned:
 
 - about how recommenders turn data into predictions
 - about where bias or unfairness could show up in systems like this
+
+The system scores each song by comparing its features to what the user wants and picks the closest matches. It feels like a real recommendation because the features use the same words listeners already use, like genre, mood, and energy. The major bias I noticed is that when genre matching carries so much weight users with different tastes in genres struggle to get results that fit how they actually want.
 
 
 ---
