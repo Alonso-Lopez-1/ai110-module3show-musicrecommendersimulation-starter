@@ -29,6 +29,41 @@ Some prompts to answer:
 
 You can include a simple diagram or bullet list if helpful.
 
+Each Song uses six features: genre, mood, energy, tempo_bpm, valence, and acousticness.
+
+The UserProfile stores a favorite_genre, favorite_mood, target_energy, and a boolean likes_acoustic.
+
+The Recommender scores each song by comparing its features to the user profile. Categorical features like genre and mood receive full points on an exact match. Numerical features like energy, valence, and acousticness are scored by proximity, meaning the closer a song's value is to the user's target, the higher the score. Each feature score is multiplied by a weight and all weighted scores are added together into one final number. The songs with the highest final scores are selected and the top k results are returned as recommendations.
+
+### Data Flow Diagram
+
+See [data_flow.md](data_flow.md) for the full Mermaid.js flowchart.
+
+### Algorithm Recipe
+
+The scoring function evaluates each song against the user profile using this point system:
+
+| Feature | Rule | Points |
+|---|---|---|
+| Genre | Exact match | +2.0 |
+| Mood | Exact match | +1.0 |
+| Energy | `(1 − \|song.energy − user.energy\|) × 1.5` | up to +1.5 |
+| Valence | `(1 − \|song.valence − user.valence\|) × 0.5` | up to +0.5 |
+| Danceability | `(1 − \|song.danceability − user.danceability\|) × 0.5` | up to +0.5 |
+| Acousticness | `(1 − \|song.acousticness − user.acousticness\|) × 0.5` | up to +0.5 |
+| Acoustic bonus | `likes_acoustic` is True AND `song.acousticness > 0.7` | +0.5 |
+
+**Maximum possible score: ~6.5 points**
+
+Genre is weighted highest because it is the broadest structural filter. Energy carries the most weight among continuous features because it best captures how a song "feels" in the moment. Valence, danceability, and acousticness act as tiebreakers that fine-tune the ranking.
+
+### Potential Biases
+
+- **Genre dominance.** A song in the wrong genre can never outscore a genre match even if every other feature is a perfect fit. A great mood/energy match in a neighboring genre (e.g., indie pop vs. pop) will always rank below a weak genre match.
+- **Mood rigidity.** Mood is an exact string match. Adjacent moods like "relaxed" and "chill" are treated as completely unrelated, so a close vibe match can be penalized simply because of label wording.
+- **Small catalog amplification.** With only 20 songs, a single genre match can dominate the entire top-K list. In a larger catalog this effect would be diluted.
+- **Acoustic bonus only goes one way.** Users who prefer non-acoustic songs receive no equivalent bonus, giving acoustic listeners a built-in scoring advantage.
+
 ---
 
 ## Getting Started
@@ -53,6 +88,10 @@ pip install -r requirements.txt
 ```bash
 python -m src.main
 ```
+
+### Sample Output
+
+![CLI Verification Output](Screenshots/Phase_3.4.png)
 
 ### Running Tests
 
