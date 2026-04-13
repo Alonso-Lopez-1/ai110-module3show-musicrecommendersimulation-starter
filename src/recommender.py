@@ -70,59 +70,58 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """
     Scores a single song against user preferences.
 
-    Algorithm Recipe  [EXPERIMENT: weight shift — genre halved, energy doubled]
+    Algorithm Recipe
     ----------------
     Categorical matches (exact string equality):
-        genre match  → +1.0  (was +2.0, halved to reduce genre dominance)
-        mood match   → +2.0
+        genre match  → +2.0
+        mood match   → +1.0
 
     Numerical proximity (each worth up to the stated max):
-        energy       → up to +3.0  (was +1.5, doubled — max_pts * (1 - |user - song|))
-        tempo_bpm    → up to +1.0  (max_pts * (1 - |user - song| / 100))
-        valence      → up to +0.75 (max_pts * (1 - |user - song|))
-        danceability → up to +0.75 (max_pts * (1 - |user - song|))
+        energy       → up to +1.5  (1.5 * (1 - |user - song|))
+        valence      → up to +0.5  (0.5 * (1 - |user - song|))
+        danceability → up to +0.5  (0.5 * (1 - |user - song|))
+        acousticness → up to +0.5  (0.5 * (1 - |user - song|))
 
     Bonus:
-        likes_acoustic + song acousticness > 0.6 → +0.5
+        likes_acoustic + song acousticness > 0.7 → +0.5
 
-    Maximum possible score: 9.0  (was 8.5; genre −1.0, energy +1.5 → net +0.5)
+    Maximum possible score: 6.5
     """
     score: float = 0.0
     reasons: List[str] = []
 
     # --- categorical: genre ---
     if user_prefs.get("genre", "").lower() == song["genre"].lower():
-        score += 1.0
-        reasons.append(f"genre match (+1.0)")
+        score += 2.0
+        reasons.append(f"genre match (+2.0)")
 
     # --- categorical: mood ---
     if user_prefs.get("mood", "").lower() == song["mood"].lower():
-        score += 2.0
-        reasons.append(f"mood match (+2.0)")
+        score += 1.0
+        reasons.append(f"mood match (+1.0)")
 
     # --- numerical: energy ---
-    energy_pts = 3.0 * (1.0 - abs(user_prefs["energy"] - song["energy"]))
+    energy_pts = 1.5 * (1.0 - abs(user_prefs["energy"] - song["energy"]))
     score += energy_pts
     reasons.append(f"energy proximity (+{energy_pts:.2f})")
 
-    # --- numerical: tempo_bpm (normalise difference to a 0-1 scale using 100 bpm as max diff) ---
-    tempo_diff = abs(user_prefs["tempo_bpm"] - song["tempo_bpm"]) / 100.0
-    tempo_pts = 1.0 * max(0.0, 1.0 - tempo_diff)
-    score += tempo_pts
-    reasons.append(f"tempo proximity (+{tempo_pts:.2f})")
-
     # --- numerical: valence ---
-    valence_pts = 0.75 * (1.0 - abs(user_prefs["valence"] - song["valence"]))
+    valence_pts = 0.5 * (1.0 - abs(user_prefs["valence"] - song["valence"]))
     score += valence_pts
     reasons.append(f"valence proximity (+{valence_pts:.2f})")
 
     # --- numerical: danceability ---
-    dance_pts = 0.75 * (1.0 - abs(user_prefs["danceability"] - song["danceability"]))
+    dance_pts = 0.5 * (1.0 - abs(user_prefs["danceability"] - song["danceability"]))
     score += dance_pts
     reasons.append(f"danceability proximity (+{dance_pts:.2f})")
 
+    # --- numerical: acousticness ---
+    acoustic_pts = 0.5 * (1.0 - abs(user_prefs["acousticness"] - song["acousticness"]))
+    score += acoustic_pts
+    reasons.append(f"acousticness proximity (+{acoustic_pts:.2f})")
+
     # --- bonus: acousticness preference ---
-    if user_prefs.get("likes_acoustic") and song["acousticness"] > 0.6:
+    if user_prefs.get("likes_acoustic") and song["acousticness"] > 0.7:
         score += 0.5
         reasons.append("acoustic bonus (+0.50)")
 
